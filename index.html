@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Assistant IA : Tableau de bord</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#f4f6f9;--card:#fff;--text:#16202c;--muted:#5a6878;--grid:#e1e6ec;--line:#d5dce5;--accent:#1f4fa3;--warn:#b45309;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e141b;--card:#161e28;--text:#e7ecf2;--muted:#98a6b6;--grid:#263140;--line:#2c3848;--accent:#7aa5f0;--warn:#f0b35a}}
+:root[data-theme="dark"]{--bg:#0e141b;--card:#161e28;--text:#e7ecf2;--muted:#98a6b6;--grid:#263140;--line:#2c3848;--accent:#7aa5f0;--warn:#f0b35a}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1120px;margin:0 auto;padding:20px 16px 40px}
+header{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline;justify-content:space-between;margin-bottom:18px}
+h1{font-size:22px;margin:0;font-weight:700}
+h2{font-size:18px;margin:32px 0 12px;font-weight:700}
+h3{font-size:15px;margin:0 0 2px;font-weight:650}
+.badge{font-size:12px;color:var(--warn);border:1px solid var(--warn);border-radius:4px;padding:2px 8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:16px;min-width:0}
+.sub{color:var(--muted);font-size:13px;margin:0 0 10px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.full{margin-top:16px}
+.box{position:relative;height:300px}
+.box.tall{height:360px}
+@media(max-width:760px){.grid{grid-template-columns:1fr}.box{height:260px}}
+.ctl{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin-bottom:10px;font-size:13px}
+select,button{font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:4px 8px;cursor:pointer}
+button:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.scroll{overflow-x:auto}
+svg text{font-family:inherit}
+.leg{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);margin-top:8px}
+.leg i{display:block;width:160px;height:10px;border-radius:2px;background:linear-gradient(90deg,#dbe7f5,#0b3a75)}
+.box.xl{height:460px}
+@media(max-width:760px){.box.xl{height:420px}}
+footer{margin-top:28px;font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>Assistant IA : Tableau de bord</h1>
+  <span class="badge">Prototype · données fictives · dernière mise à jour : <span id="upd"></span></span>
+</header>
+
+<section class="card">
+  <h3>Évolution par cas d'usages</h3>
+  <p class="sub">Usages administratifs, par semaine (date du lundi). Les semaines grisées correspondent aux vacances d'été.</p>
+  <div class="ctl"><label>Académie <select id="uc-ac"></select></label></div>
+  <div class="box tall"><canvas id="c-uc"></canvas></div>
+</section>
+
+<h2>Assistant IA : déploiement</h2>
+<div class="grid">
+  <section class="card"><h3>% d'utilisateurs activés</h3><p class="sub" id="s-act"></p><div class="ctl"><label>Académie <select id="act-ac"></select></label></div><div class="box"><canvas id="c-act"></canvas></div></section>
+  <section class="card"><h3>% d'utilisateurs actifs</h3><p class="sub" id="s-rec"></p><div class="box"><canvas id="c-rec"></canvas></div></section>
+</div>
+
+<div class="grid full">
+  <section class="card">
+    <h3>Utilisateurs activés par Académie</h3>
+    <p class="sub">Utilisateurs activés cumulés. Cliquez sur la légende pour afficher ou masquer une académie.</p>
+    <div class="ctl"><button id="a-top">6 premières</button><button id="a-all">Toutes</button><button id="a-none">Aucune</button></div>
+    <div class="box xl"><canvas id="c-ac"></canvas></div>
+  </section>
+  <section class="card">
+    <h3>Utilisateurs actifs par académie</h3>
+    <p class="sub">Utilisateurs actifs par semaine. Cliquez sur la légende pour afficher ou masquer une académie.</p>
+    <div class="ctl"><button id="b-top">6 premières</button><button id="b-all">Toutes</button><button id="b-none">Aucune</button></div>
+    <div class="box xl"><canvas id="c-ac2"></canvas></div>
+  </section>
+</div>
+
+<div class="grid full">
+  <section class="card">
+    <h3>Connexions par académie</h3>
+    <p class="sub">Nombre de connexions par semaine. Cliquez sur la légende pour afficher ou masquer une académie.</p>
+    <div class="ctl"><button id="c-top">6 premières</button><button id="c-all">Toutes</button><button id="c-none">Aucune</button></div>
+    <div class="box xl"><canvas id="c-ac3"></canvas></div>
+  </section>
+  <section class="card">
+    <h3>Messages par académie</h3>
+    <p class="sub">Nombre de messages envoyés à l’Assistant par semaine. Cliquez sur la légende pour afficher ou masquer une académie.</p>
+    <div class="ctl"><button id="d-top">6 premières</button><button id="d-all">Toutes</button><button id="d-none">Aucune</button></div>
+    <div class="box xl"><canvas id="c-ac4"></canvas></div>
+  </section>
+</div>
+
+<footer>Source cible : open data data.education.gouv.fr (phases Beta et production), collecte quotidienne. Cible : 100 000 agents. Utilisateur actif : à définir (ex. au moins 4 jours d'activité sur 30).</footer>
+</main>
+
+<script>
+// ---------- Données fictives (générées de façon déterministe) ----------
+function rng(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const R=rng(42), W=[], TARGET=100000;
+for(let w=14;w<=40;w++)W.push(w);
+const L=W.map(w=>new Date(Date.UTC(2025,11,29+7*(w-1))).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'2-digit',timeZone:'UTC'})), vac=w=>w>=31&&w<=34, seas=w=>vac(w)?0.6:1;
+const logi=t=>38000/(1+Math.exp(-(t-30)/4.5));
+const A=[];let acc=logi(13);
+W.forEach(w=>{acc+=(logi(w)-logi(w-1))*seas(w);A.push(Math.round(acc))});
+const act=A.map(a=>+(a/TARGET*100).toFixed(1));
+const rec=W.map(w=>+(28+18*(w-14)/26-(vac(w)?8:0)+(R()-.5)*2).toFixed(1));
+const activeUsers=A.map((a,i)=>a*rec[i]/100);
+const UC=[['Synthèse de documents',.26,.32,'#1f4fa3'],['Compte rendu de réunion',.16,.24,'#d9731a'],['Rédaction / reformulation',.30,.24,'#2a9d8f'],["Recherche d'information",.20,.14,'#8e5bb5'],['Analyse de données',.08,.06,'#c0392b']];
+const ucVol=UC.map(u=>W.map((w,i)=>Math.round(activeUsers[i]*3*(u[1]+(u[2]-u[1])*i/(W.length-1))*(1+(R()-.5)*.08))));
+
+// Académies : [nom, poids, colonne, ligne]
+const AC=[['Lille',6,4,0],['Normandie',4,2,1],['Amiens',3,3,1],['Reims',2.3,4,1],['Nancy-Metz',3.5,5,1],
+['Rennes',4,1,2],['Versailles',9,2,2],['Paris',3,3,2],['Créteil',6,4,2],['Strasbourg',3.5,5,2],
+['Nantes',5,1,3],['Orléans-Tours',4,2,3],['Dijon',2.5,3,3],['Besançon',2,4,3],
+['Poitiers',2.5,1,4],['Limoges',1.2,2,4],['Clermont-Ferrand',2.2,3,4],['Lyon',5,4,4],['Grenoble',4,5,4],
+['Bordeaux',5,1,5],['Toulouse',5,2,5],['Montpellier',4,3,5],['Aix-Marseille',5,4,5],['Nice',3.5,5,5],
+['Corse',.6,6,6],['Guadeloupe',1.1,0,7],['Martinique',.9,1,7],['Guyane',.9,2,7],['La Réunion',2,3,7],['Mayotte',.6,4,7]];
+const raw=AC.map(a=>{const f=.6+R()*.8, mid=24+R()*10;return W.map(w=>a[1]*f/(1+Math.exp(-(w-mid)/3.5)))});
+const users=AC.map(()=>[]);
+W.forEach((w,i)=>{const s=raw.reduce((t,r)=>t+r[i],0);AC.forEach((a,k)=>{let v=Math.round(raw[k][i]/s*A[i]);if(i)v=Math.max(v,users[k][i-1]);users[k].push(v)})});
+
+const gk=AC.map(()=>.85+R()*.3);
+const actives=users.map((u,k)=>u.map((v,i)=>Math.round(v*rec[i]/100*gk[k])));
+const conns=actives.map(u=>{const c=2.6+R()*1.2;return u.map(v=>Math.round(v*c*(1+(R()-.5)*.06)))});
+const msgs=conns.map(u=>{const m=5+R()*3;return u.map(v=>Math.round(v*m*(1+(R()-.5)*.06)))});
+
+// ---------- Graphiques ----------
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const vacPlugin={id:'vac',beforeDatasetsDraw(c){const x=c.scales.x,a=c.chartArea,i0=W.indexOf(31),i1=W.indexOf(34);if(i0<0)return;const h=(x.getPixelForValue(1)-x.getPixelForValue(0))/2;c.ctx.save();c.ctx.fillStyle='rgba(120,130,145,.16)';c.ctx.fillRect(x.getPixelForValue(i0)-h,a.top,x.getPixelForValue(i1)-x.getPixelForValue(i0)+2*h,a.bottom-a.top);c.ctx.restore()}};
+const charts=[];
+function line(id,datasets,yTitle,extra){
+  const c=new Chart(document.getElementById(id),{type:'line',data:{labels:L,datasets},plugins:[vacPlugin],
+    options:Object.assign({responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      elements:{point:{radius:0,hoverRadius:4},line:{borderWidth:2,tension:.25}},
+      scales:{x:{grid:{display:false},ticks:{maxRotation:45,autoSkip:true,maxTicksLimit:14}},y:{beginAtZero:true,title:{display:true,text:yTitle},grid:{color:()=>css('--grid')}}},
+      plugins:{legend:{position:'bottom',labels:{boxWidth:12}}}},extra||{})});
+  charts.push(c);return c;
+}
+function applyTheme(){Chart.defaults.color=css('--muted');charts.forEach(c=>{c.options.scales.y.grid.color=css('--grid');c.update()})}
+Chart.defaults.color=css('--muted');
+
+const n=W.length-1, SUMW=AC.reduce((t,a)=>t+a[1],0);
+const tgt=k=>k<0?TARGET:Math.round(TARGET*AC[k][1]/SUMW);
+const fmt=v=>v.toLocaleString('fr-FR');
+const acOrder=AC.map((_,k)=>k).sort((x,y)=>AC[x][0].localeCompare(AC[y][0],'fr'));
+function fillSel(id){const e=document.getElementById(id);e.add(new Option('Toutes les académies',-1));acOrder.forEach(k=>e.add(new Option(AC[k][0],k)));return e}
+
+// Évolution par cas d'usages
+const ucSeries=(j,k)=>k<0?ucVol[j]:ucVol[j].map((v,i)=>Math.round(v*users[k][i]/A[i]));
+const ucChart=line('c-uc',UC.map((u,j)=>({label:u[0],data:ucSeries(j,-1),borderColor:u[3],backgroundColor:u[3]})),'Conversations par semaine');
+fillSel('uc-ac').onchange=e=>{const k=+e.target.value;ucChart.data.datasets.forEach((d,j)=>d.data=ucSeries(j,k));ucChart.update()};
+
+// Activation
+const actChart=line('c-act',[{label:'',data:[],borderColor:'#1f4fa3',backgroundColor:'rgba(31,79,163,.15)',fill:true}],'% des agents cibles');
+function drawAct(k){
+  const d=k<0?act:users[k].map(u=>+(u/tgt(k)*100).toFixed(1)), c=k<0?A[n]:users[k][n], ds=actChart.data.datasets[0];
+  ds.data=d;ds.label='% d’activation';
+  document.getElementById('s-act').textContent='Au moins un message envoyé : '+d[n]+' % de la cible ('+fmt(c)+' agents sur '+fmt(tgt(k))+'), semaine du '+L[n]+'.';
+  actChart.update();
+}
+fillSel('act-ac').onchange=e=>drawAct(+e.target.value);
+drawAct(-1);
+
+line('c-rec',[{label:'% d’utilisateurs actifs',data:rec,borderColor:'#2a9d8f',backgroundColor:'rgba(42,157,143,.15)',fill:true}],'% des utilisateurs activés',{plugins:{legend:{display:false}}});
+document.getElementById('s-rec').textContent='Utilisateurs actifs / utilisateurs activés : '+rec[n]+' % (semaine du '+L[n]+').';
+
+// Graphiques par académie (même style)
+const hue=k=>'hsl('+Math.round(k*137.5%360)+',60%,48%)';
+function acLines(id,data,ytitle,pre){
+  const top=new Set(data.map((_,k)=>k).sort((a,b)=>data[b][n]-data[a][n]).slice(0,6));
+  const ch=line(id,AC.map((a,k)=>({label:a[0],data:data[k],borderColor:hue(k),backgroundColor:hue(k),hidden:!top.has(k)})),ytitle,{interaction:{mode:'nearest',intersect:false},plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}}}});
+  const show=f=>{ch.data.datasets.forEach((d,k)=>ch.setDatasetVisibility(k,f(k)));ch.update()};
+  document.getElementById(pre+'-top').onclick=()=>show(k=>top.has(k));
+  document.getElementById(pre+'-all').onclick=()=>show(()=>true);
+  document.getElementById(pre+'-none').onclick=()=>show(()=>false);
+}
+acLines('c-ac',users,'Utilisateurs activés (cumul)','a');
+acLines('c-ac2',actives,'Utilisateurs actifs par semaine','b');
+acLines('c-ac3',conns,'Connexions par semaine','c');
+acLines('c-ac4',msgs,'Messages par semaine','d');
+
+document.getElementById('upd').textContent=new Date().toLocaleDateString('fr-FR');
+matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>{applyTheme()});
+</script>
+</body>
+</html>
