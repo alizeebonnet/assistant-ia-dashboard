@@ -35,6 +35,8 @@ svg text{font-family:inherit}
 .leg i{display:block;width:160px;height:10px;border-radius:2px;background:linear-gradient(90deg,#dbe7f5,#0b3a75)}
 .box.xl{height:460px}
 @media(max-width:760px){.box.xl{height:420px}}
+[hidden]{display:none!important}
+button[aria-pressed="true"]{background:var(--accent);color:var(--card);border-color:var(--accent)}
 footer{margin-top:28px;font-size:12px;color:var(--muted)}
 </style>
 </head>
@@ -46,32 +48,30 @@ footer{margin-top:28px;font-size:12px;color:var(--muted)}
 </header>
 
 <section class="card">
-  <h3>Évolution par cas d'usages</h3>
-  <p class="sub">Usages administratifs, par semaine (date du lundi). Les semaines grisées correspondent aux vacances d'été.</p>
+  <h3>Conversations par cas d'usages</h3>
+  <p class="sub">Nombre de conversations par cas d'usages administratifs, par semaine (date du lundi). Les semaines grisées correspondent aux vacances d'été.</p>
   <div class="ctl"><label>Académie <select id="uc-ac"></select></label></div>
   <div class="box tall"><canvas id="c-uc"></canvas></div>
 </section>
 
 <h2>Assistant IA : déploiement</h2>
 <div class="grid">
-  <section class="card"><h3>% d'utilisateurs activés</h3><p class="sub" id="s-act"></p><div class="ctl"><label>Académie <select id="act-ac"></select></label></div><div class="box"><canvas id="c-act"></canvas></div></section>
-  <section class="card"><h3>% d'utilisateurs actifs</h3><p class="sub" id="s-rec"></p><div class="box"><canvas id="c-rec"></canvas></div></section>
+  <section class="card"><h3>% d'utilisateurs activés</h3><p class="sub">% d'utilisateurs (sur 100 000) ayant au moins envoyé 1 message depuis la généralisation de l'Assistant IA</p><div class="ctl"><label>Académie <select id="act-ac"></select></label></div><div class="box"><canvas id="c-act"></canvas></div></section>
+  <section class="card">
+    <h3>Utilisateurs actifs</h3>
+    <p class="sub" id="ac-sub"></p>
+    <div class="ctl"><button id="p-w" aria-pressed="true">Hebdomadaire</button><button id="p-m" aria-pressed="false">Mensuel</button></div>
+    <div class="box" id="box-w"><canvas id="c-ac"></canvas></div>
+    <div class="box" id="box-m" hidden><canvas id="c-ac-m"></canvas></div>
+  </section>
 </div>
 
-<div class="grid full">
-  <section class="card">
-    <h3>Utilisateurs activés par Académie</h3>
-    <p class="sub">Utilisateurs activés cumulés. Cliquez sur la légende pour afficher ou masquer une académie.</p>
-    <div class="ctl"><button id="a-top">6 premières</button><button id="a-all">Toutes</button><button id="a-none">Aucune</button></div>
-    <div class="box xl"><canvas id="c-ac"></canvas></div>
-  </section>
-  <section class="card">
-    <h3>Utilisateurs actifs par académie</h3>
-    <p class="sub">Utilisateurs actifs par semaine. Cliquez sur la légende pour afficher ou masquer une académie.</p>
-    <div class="ctl"><button id="b-top">6 premières</button><button id="b-all">Toutes</button><button id="b-none">Aucune</button></div>
-    <div class="box xl"><canvas id="c-ac2"></canvas></div>
-  </section>
-</div>
+<section class="card full">
+  <h3>Utilisateurs actifs par académie</h3>
+  <p class="sub">Nombre d'utilisateurs uniques ayant envoyé au moins 1 message dans la semaine. Cliquez sur la légende pour afficher ou masquer une académie.</p>
+  <div class="ctl"><button id="b-top">6 premières</button><button id="b-all">Toutes</button><button id="b-none">Aucune</button></div>
+  <div class="box xl"><canvas id="c-ac2"></canvas></div>
+</section>
 
 <div class="grid full">
   <section class="card">
@@ -88,7 +88,7 @@ footer{margin-top:28px;font-size:12px;color:var(--muted)}
   </section>
 </div>
 
-<footer>Source cible : open data data.education.gouv.fr (phases Beta et production), collecte quotidienne. Cible : 100 000 agents. Utilisateur actif : à définir (ex. au moins 4 jours d'activité sur 30).</footer>
+<footer>Source cible : open data data.education.gouv.fr (phases Beta et production), collecte quotidienne. Cible : 100 000 agents. Utilisateur actif : agent unique ayant envoyé au moins 1 message à l'Assistant dans la semaine (vue hebdomadaire) ou dans le mois (vue mensuelle).</footer>
 </main>
 
 <script>
@@ -153,14 +153,12 @@ const actChart=line('c-act',[{label:'',data:[],borderColor:'#1f4fa3',backgroundC
 function drawAct(k){
   const d=k<0?act:users[k].map(u=>+(u/tgt(k)*100).toFixed(1)), c=k<0?A[n]:users[k][n], ds=actChart.data.datasets[0];
   ds.data=d;ds.label='% d’activation';
-  document.getElementById('s-act').textContent='Au moins un message envoyé : '+d[n]+' % de la cible ('+fmt(c)+' agents sur '+fmt(tgt(k))+'), semaine du '+L[n]+'.';
   actChart.update();
 }
 fillSel('act-ac').onchange=e=>drawAct(+e.target.value);
 drawAct(-1);
 
-line('c-rec',[{label:'% d’utilisateurs actifs',data:rec,borderColor:'#2a9d8f',backgroundColor:'rgba(42,157,143,.15)',fill:true}],'% des utilisateurs activés',{plugins:{legend:{display:false}}});
-document.getElementById('s-rec').textContent='Utilisateurs actifs / utilisateurs activés : '+rec[n]+' % (semaine du '+L[n]+').';
+const mau=W.map((w,i)=>Math.round(A[i]*(.55+.17*i/(W.length-1)-(vac(w)?.05:0)+Math.sin(i*2.3)*.006)));
 
 // Graphiques par académie (même style)
 const hue=k=>'hsl('+Math.round(k*137.5%360)+',60%,48%)';
@@ -172,7 +170,28 @@ function acLines(id,data,ytitle,pre){
   document.getElementById(pre+'-all').onclick=()=>show(()=>true);
   document.getElementById(pre+'-none').onclick=()=>show(()=>false);
 }
-acLines('c-ac',users,'Utilisateurs activés (cumul)','a');
+const wau=W.map((_,i)=>actives.reduce((t,r)=>t+r[i],0));
+// Utilisateurs actifs : vue hebdomadaire / mensuelle
+const wChart=line('c-ac',[{label:'Utilisateurs actifs',data:wau,borderColor:'#1f4fa3',backgroundColor:'rgba(31,79,163,.15)',fill:true}],'Utilisateurs actifs par semaine',{plugins:{legend:{display:false}}});
+const mk=W.map(w=>{const d=new Date(Date.UTC(2025,11,29+7*(w-1)+3));return d.getUTCFullYear()*12+d.getUTCMonth()});
+const months=[...new Set(mk)], last=months.length-1;
+const mLab=months.map(m=>new Date(Date.UTC(Math.floor(m/12),m%12,1)).toLocaleDateString('fr-FR',{month:'short',year:'2-digit',timeZone:'UTC'}));
+const mVal=months.map((m,j)=>j===last?Math.round(Math.max(...wau.filter((_,i)=>mk[i]===m))*1.05):mau[mk.lastIndexOf(m)]);
+const mChart=new Chart(document.getElementById('c-ac-m'),{type:'bar',
+  data:{labels:mLab,datasets:[{label:'Utilisateurs actifs mensuels',data:mVal,backgroundColor:months.map((m,j)=>j===last?'rgba(42,157,143,.4)':'#2a9d8f')}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{afterLabel:c=>c.dataIndex===last?'(mois en cours)':''}}},
+  scales:{x:{grid:{display:false}},y:{beginAtZero:true,title:{display:true,text:'Utilisateurs actifs mensuels'},grid:{color:()=>css('--grid')}}}}});
+charts.push(mChart);
+const subs={w:"Nombre d'utilisateurs uniques ayant envoyé au moins 1 message dans la semaine",m:"Nombre d'utilisateurs uniques ayant envoyé au moins 1 message dans le mois. Le dernier mois (barre claire) est en cours."};
+function setPeriod(p){
+  document.getElementById('ac-sub').textContent=subs[p];
+  document.getElementById('box-w').hidden=p!=='w';document.getElementById('box-m').hidden=p!=='m';
+  document.getElementById('p-w').setAttribute('aria-pressed',p==='w');document.getElementById('p-m').setAttribute('aria-pressed',p==='m');
+  (p==='w'?wChart:mChart).resize();
+}
+document.getElementById('p-w').onclick=()=>setPeriod('w');
+document.getElementById('p-m').onclick=()=>setPeriod('m');
+setPeriod('w');
 acLines('c-ac2',actives,'Utilisateurs actifs par semaine','b');
 acLines('c-ac3',conns,'Connexions par semaine','c');
 acLines('c-ac4',msgs,'Messages par semaine','d');
